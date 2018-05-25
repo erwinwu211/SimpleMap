@@ -10,6 +10,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,18 +27,21 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     private final static String TAG = "MainActivity";
-
+    private int markers=0;
     private TextView infoView;
     private GoogleMap googleMap;
     private GoogleApiClient googleApiClient;
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationRequest locationRequest;
     private LocationCallback locationCallback;
-
+    private Marker marker1;
+    private Marker marker2;
     private enum UpdatingState {STOPPED, REQUESTING, STARTED}
 
     private UpdatingState state = UpdatingState.STOPPED;
@@ -52,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_main);
-
+        Button button =  findViewById(R.id.button3);
         infoView = findViewById(R.id.info_view);
         MapFragment mapFragment =
                 (MapFragment) getFragmentManager().findFragmentById(R.id.map_fragment);
@@ -66,9 +71,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
+
         locationRequest = new LocationRequest();
-        locationRequest.setInterval(10000L);
-        locationRequest.setFastestInterval(5000L);
+        //locationRequest.setInterval(10000L);
+        //locationRequest.setFastestInterval(5000L);
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
 
         locationCallback = new LocationCallback() {
@@ -85,6 +91,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         };
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                UpdataLocation();
+            }
+        });
     }
 
     @Override
@@ -94,14 +107,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleApiClient.connect();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d(TAG, "onResume");
-        if (state != UpdatingState.STARTED && googleApiClient.isConnected())
-            startLocationUpdate(true);
-        else
-            state = UpdatingState.REQUESTING;
+    void UpdataLocation() {
+        Log.d(TAG, "onClick");
+        startLocationUpdate(true);
     }
 
     @Override
@@ -124,6 +132,37 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.d(TAG, "onMapReady");
         map.moveCamera(CameraUpdateFactory.zoomTo(15f));
         googleMap = map;
+        final Button button2 = findViewById(R.id.button4);
+        button2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                LatLng centerPosition = googleMap.getCameraPosition().target;
+                if (markers==0){
+                    marker1=googleMap.addMarker(new MarkerOptions().position(centerPosition).title("Hello world"));
+                    button2.setText("Marker2");
+                    markers++;
+                }
+                else if (markers==1){
+                    marker2=googleMap.addMarker(new MarkerOptions().position(centerPosition).title("Hello world"));
+                    button2.setText("Clear");
+                    float[] result = new float[1];
+                    Location.distanceBetween(marker1.getPosition().latitude,
+                            marker1.getPosition().longitude,
+                            marker2.getPosition().latitude,
+                            marker2.getPosition().longitude,result);
+                    infoView.setText( "distance is "+(int) result[0]+"m");
+                    markers++;
+                }
+                else{
+                    googleMap.clear();
+                    markers = 0;
+                    button2.setText("Marker1");
+                }
+
+
+
+            }
+        });
     }
 
     @Override
